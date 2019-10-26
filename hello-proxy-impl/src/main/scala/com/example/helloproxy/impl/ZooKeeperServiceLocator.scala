@@ -4,6 +4,7 @@ import java.io.Closeable
 import java.net.{InetAddress, URI}
 
 import com.lightbend.lagom.scaladsl.api.{Descriptor, ServiceLocator}
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigException.BadValue
 import javax.inject.Inject
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
@@ -35,11 +36,11 @@ trait ZooKeeperServiceLocatorConfig {
 
 object ZooKeeperServiceLocator {
 
-  case class Config(serverHostname: String,
-                    serverPort: Int,
-                    scheme: String, // Technically should be another type
-                    routingPolicy: String, // Technically should be another type
-                    zkServicesPath: String) extends ZooKeeperServiceLocatorConfig {
+  case class ZookeeperConfig(serverHostname: String,
+                             serverPort: Int,
+                             scheme: String, // Technically should be another type
+                             routingPolicy: String, // Technically should be another type
+                             zkServicesPath: String) extends ZooKeeperServiceLocatorConfig {
     def zkUri: String = ZooKeeperServiceLocator.zkUri(serverHostname, serverPort)
   }
 
@@ -48,40 +49,24 @@ object ZooKeeperServiceLocator {
                  scheme: String,
                  routingPolicy: String,
                  zkServicesPath: String): ZooKeeperServiceLocatorConfig =
-    Config(serverHostname,
+    ZookeeperConfig(serverHostname,
       serverPort,
       scheme,
       routingPolicy,
       zkServicesPath)
 
-  def fromConfigurationWithPath(in: Configuration,
-                                path: String = defaultConfigPath): Config = {
-    //    fromConfiguration(in.getConfig(path).get)
-    fromConfiguration()
+  def fromConfigurationWithPath(in: Configuration, path: String = defaultConfigPath): ZookeeperConfig = {
+    fromConfiguration(in.underlying.atPath(defaultConfigPath))
   }
 
-  def fromConfiguration(): Config =
-    fromConfig()
+  def fromConfiguration(in: Config): ZookeeperConfig = fromConfig(in)
 
-  val serverhost = "localhost"
-  val serverport = 2181
-  val serverscheme = "http"
-  val serverroute = "round-robin"
-
-  //    def fromConfig(in: TSConfig): Config =
-  //      Config(serverHostname = in.getString("server-hostname"),
-  //        serverPort = in.getInt("server-port"),
-  //        scheme = in.getString("uri-scheme"),
-  //        routingPolicy = in.getString("routing-policy"),
-  //        zkServicesPath = defaultZKServicesPath)
-
-  def fromConfig(): Config =
-    Config(serverHostname = serverhost,
-      serverPort = serverport,
-      scheme = serverscheme,
-      routingPolicy = serverroute,
+  def fromConfig(in: Config): ZookeeperConfig =
+    ZookeeperConfig(serverHostname = in.getString("server-hostname"),
+      serverPort = in.getInt("server-port"),
+      scheme = in.getString("uri-scheme"),
+      routingPolicy = in.getString("routing-policy"),
       zkServicesPath = defaultZKServicesPath)
-
 
   val defaultConfigPath = "lagom.discovery.zookeeper"
   val defaultZKServicesPath = "/lagom/services"
@@ -99,7 +84,7 @@ class ZooKeeperServiceLocator(serverHostname: String,
 
 
   @Inject()
-  def this(config: ZooKeeperServiceLocator.Config)(implicit ec: ExecutionContext) =
+  def this(config: ZooKeeperServiceLocator.ZookeeperConfig)(implicit ec: ExecutionContext) =
     this(config.serverHostname,
       config.serverPort,
       config.scheme,
@@ -110,9 +95,6 @@ class ZooKeeperServiceLocator(serverHostname: String,
   private val zkClient: CuratorFramework =
     CuratorFrameworkFactory.newClient(zkUri, new ExponentialBackoffRetry(1000, 3))
   zkClient.start()
-
-  //  groupkt.com/country/get/all
-  val devModeServiceLocatorUrl = URI.create("http://groupkt.com")
 
   private val serviceDiscovery: ServiceDiscovery[String] =
     ServiceDiscoveryBuilder
@@ -175,20 +157,17 @@ class ZooKeeperServiceLocator(serverHostname: String,
     }
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[URI]] = {
-    println(s"+++++++++++++++++++++ ${name} +++++++++++++++++++++++")
     locateAsScala(name)
   }
 
 
   override def doWithService[T](name: String, serviceCall: Descriptor.Call[_, _])(block: URI => Future[T])
                                (implicit ec: ExecutionContext): Future[Option[T]] = {
-    println(s"+++++++++++++++ ${name} ++++++++++++")
-    if (name.equalsIgnoreCase("hello-srvc")) {
-      block(URI.create("http://localhost:8000")).map(Some.apply)
+    locateAsScala(name).flatMap {
+      case Some(uri) => block(uri).map(Some.apply)
+      case None => Future.successful(None)
     }
-    else {
-      block(URI.create("https://localhost:8443")).map(Some.apply)
-    }
+
   }
 
 
