@@ -124,3 +124,4 @@ lazy val docs = (project in file("docs"))
 //----------------------------------
 
 ThisBuild / scalacOptions ++= List("-encoding", "utf8", "-deprecation", "-feature", "-unchecked")
+
