@@ -11,13 +11,13 @@ import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.utils.CloseableUtils
 import org.apache.curator.x.discovery.{ServiceDiscovery, ServiceDiscoveryBuilder, ServiceInstance}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 
 import scala.collection.JavaConverters._
 import scala.collection.concurrent
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
-
 
 
 trait ZooKeeperServiceLocatorConfig {
@@ -82,6 +82,8 @@ class ZooKeeperServiceLocator(serverHostname: String,
                               routingPolicy: String,
                               zkServicesPath: String,
                               zkUri: String)(implicit ec: ExecutionContext) extends ServiceLocator with Closeable {
+
+  var logger: Logger = LoggerFactory.getLogger("com.lightbend.lagom")
 
 
   @Inject()
@@ -158,12 +160,15 @@ class ZooKeeperServiceLocator(serverHostname: String,
     }
 
   override def locate(name: String, serviceCall: Descriptor.Call[_, _]): Future[Option[URI]] = {
+    logger.debug(s"Service name at locate method: ${name}")
     locateAsScala(name)
   }
 
 
   override def doWithService[T](name: String, serviceCall: Descriptor.Call[_, _])(block: URI => Future[T])
                                (implicit ec: ExecutionContext): Future[Option[T]] = {
+
+    logger.debug(s"Service name at doWithService: ${name}")
     locateAsScala(name).flatMap {
       case Some(uri) => block(uri).map(Some.apply)
       case None => Future.successful(None)

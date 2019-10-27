@@ -11,7 +11,7 @@ import play.api.libs.ws.ahc.AhcWSComponents
 
 class HelloLoader extends LagomApplicationLoader {
 
-  val serviceAddress = "localhost"
+  val serviceAddress = "127.0.0.1"
 
   def newServiceInstance(serviceName: String, serviceId: String, servicePort: Int): ServiceInstance[String] = {
     ServiceInstance.builder[String]
@@ -32,11 +32,8 @@ class HelloLoader extends LagomApplicationLoader {
       val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
         zookeeperConf.zkServicesPath)
       registry.start()
-      registry.register(newServiceInstance("hello-srvc", "1", 8000))
-//      registry.register(newServiceInstance("hello-srvc", "2", 3000))
-      registry.register(newServiceInstance("helloworld.GreeterService", "2", 8000))
-      val instance: ServiceInstance[String] = newServiceInstance("helloworld.GreeterService", "3", 8443)
-      registry.register(instance)
+      registry.register(newServiceInstance("hello-srvc", "1", 8443))
+      registry.register(newServiceInstance("helloworld.GreeterService", "2", 8443))
 
       override def serviceLocator: ServiceLocator = locator
     }
@@ -56,7 +53,6 @@ class HelloLoader extends LagomApplicationLoader {
         zookeeperConf.zkServicesPath)
       registry.start()
       registry.register(newServiceInstance("hello-srvc", "1", 8000))
-      registry.register(newServiceInstance("hello-srvc", "2", 3000))
       registry.register(newServiceInstance("helloworld.GreeterService", "2", 8000))
       val instance: ServiceInstance[String] = newServiceInstance("helloworld.GreeterService", "3", 8443)
       registry.register(instance)
