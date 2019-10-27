@@ -1,5 +1,6 @@
 import akka.grpc.gen.scaladsl.play.{PlayScalaClientCodeGenerator, PlayScalaServerCodeGenerator}
 import com.lightbend.lagom.core.LagomVersion
+import sbt.Keys.libraryDependencies
 
 organization in ThisBuild := "com.example"
 version in ThisBuild := "1.0-SNAPSHOT"
@@ -27,12 +28,23 @@ def workaroundSettingsAPI: Seq[sbt.Setting[_]] = Seq(
 )
 
 lazy val `lagom-scala-grpc-example` = (project in file("."))
-  .aggregate(`hello-api`, `hello-impl`, `hello-proxy-api`, `hello-proxy-impl`)
+  .aggregate(`hello-api`, `hello-impl`, `hello-proxy-api`, `hello-proxy-impl`, `lagom-service-locator-zookeeper`)
+
 
 lazy val `hello-api` = (project in file("hello-api"))
   .settings(
     libraryDependencies += lagomScaladslApi
   )
+
+
+lazy val `lagom-service-locator-zookeeper` = (project in file("service-locator-zookeeper"))
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslApi,
+      curator
+    )
+  )
+
 
 lazy val `hello-impl` = (project in file("hello-impl"))
   .enablePlugins(LagomScala)
@@ -80,9 +92,9 @@ lazy val `hello-proxy-impl` = (project in file("hello-proxy-impl"))
   .enablePlugins(JavaAgent)
   .enablePlugins(PlayAkkaHttp2Support)
   .settings(
-  akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
-  akkaGrpcExtraGenerators += PlayScalaClientCodeGenerator,
-).settings(workaroundSettingsProxy: _*)
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
+    akkaGrpcExtraGenerators += PlayScalaClientCodeGenerator,
+  ).settings(workaroundSettingsProxy: _*)
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslTestKit,
@@ -96,6 +108,7 @@ lazy val `hello-proxy-impl` = (project in file("hello-proxy-impl"))
     //  lagomDevSettings := Seq("akka.discovery.method" -> "lagom-dev-mode")
   )
   .dependsOn(`hello-proxy-api`, `hello-api`)
+
 
 
 // This sample application doesn't need either Kafka or Cassandra so we disable them
