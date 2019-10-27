@@ -70,7 +70,7 @@ lazy val `hello-impl` = (project in file("hello-impl"))
     akkaDicovery
   )
 ).settings(lagomForkedTestSettings: _*)
-  .dependsOn(`hello-api`)
+  .dependsOn(`hello-api`,  `lagom-service-locator-zookeeper`)
 
 
 def workaroundSettingsProxy: Seq[sbt.Setting[_]] = Seq(
@@ -107,7 +107,7 @@ lazy val `hello-proxy-impl` = (project in file("hello-proxy-impl"))
     // workaround for akka discovery method lookup in dev-mode
     //  lagomDevSettings := Seq("akka.discovery.method" -> "lagom-dev-mode")
   )
-  .dependsOn(`hello-proxy-api`, `hello-api`)
+  .dependsOn(`hello-proxy-api`, `hello-api`,  `lagom-service-locator-zookeeper`)
 
 
 

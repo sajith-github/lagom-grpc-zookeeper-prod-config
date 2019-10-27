@@ -4,6 +4,7 @@ import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.grpc.GrpcClientSettings
 import com.example.hello.api.HelloService
 import com.example.helloproxy.api.HelloProxyService
+import com.lightbend.lagom.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.server._
