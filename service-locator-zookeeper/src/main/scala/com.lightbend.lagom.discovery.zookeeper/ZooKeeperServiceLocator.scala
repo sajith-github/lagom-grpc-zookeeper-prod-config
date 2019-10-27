@@ -57,7 +57,7 @@ object ZooKeeperServiceLocator {
       zkServicesPath)
 
   def fromConfigurationWithPath(in: Configuration, path: String = defaultConfigPath): ZookeeperConfig = {
-    fromConfiguration(in.underlying.atPath(defaultConfigPath))
+    fromConfiguration(in.underlying.getConfig(defaultConfigPath))
   }
 
   def fromConfiguration(in: Config): ZookeeperConfig = fromConfig(in)

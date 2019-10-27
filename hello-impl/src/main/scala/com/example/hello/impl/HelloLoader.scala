@@ -33,6 +33,29 @@ class HelloLoader extends LagomApplicationLoader {
         zookeeperConf.zkServicesPath)
       registry.start()
       registry.register(newServiceInstance("hello-srvc", "1", 8000))
+//      registry.register(newServiceInstance("hello-srvc", "2", 3000))
+      registry.register(newServiceInstance("helloworld.GreeterService", "2", 8000))
+      val instance: ServiceInstance[String] = newServiceInstance("helloworld.GreeterService", "3", 8443)
+      registry.register(instance)
+
+      override def serviceLocator: ServiceLocator = locator
+    }
+    application
+  }
+
+//  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
+//    new HelloApplication(context) with LagomDevModeComponents
+
+
+  override def loadDevMode(context: LagomApplicationContext): LagomApplication ={
+    val application: HelloApplication = new HelloApplication(context) {
+      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
+        .fromConfigurationWithPath(application.configuration)
+      val locator = new ZooKeeperServiceLocator(zookeeperConf)
+      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
+        zookeeperConf.zkServicesPath)
+      registry.start()
+      registry.register(newServiceInstance("hello-srvc", "1", 8000))
       registry.register(newServiceInstance("hello-srvc", "2", 3000))
       registry.register(newServiceInstance("helloworld.GreeterService", "2", 8000))
       val instance: ServiceInstance[String] = newServiceInstance("helloworld.GreeterService", "3", 8443)
@@ -43,8 +66,6 @@ class HelloLoader extends LagomApplicationLoader {
     application
   }
 
-  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
-    new HelloApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[HelloService])
 }

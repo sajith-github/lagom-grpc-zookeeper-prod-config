@@ -46,8 +46,26 @@ class HelloProxyLoader extends LagomApplicationLoader {
     application
   }
 
-  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
-    new HelloProxyApplication(context) with LagomDevModeComponents
+  //  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
+  //    new HelloProxyApplication(context) with LagomDevModeComponents
+
+  override def loadDevMode(context: LagomApplicationContext): LagomApplication = {
+    val application: HelloProxyApplication = new HelloProxyApplication(context) {
+      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
+        .fromConfigurationWithPath(application.configuration)
+      val locator = new ZooKeeperServiceLocator(zookeeperConf)
+      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
+        zookeeperConf.zkServicesPath)
+      registry.start()
+      registry.register(newServiceInstance("hello-proxy", "1", 9000))
+      registry.register(newServiceInstance("hello-proxy", "2", 9443))
+      //      registry.register(newServiceInstance("hello-proxy", "3", 9000))
+
+      override def serviceLocator: ServiceLocator = locator
+    }
+    application
+  }
+
 
   override def describeService = Some(readDescriptor[HelloProxyService])
 }
