@@ -10,15 +10,18 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.curator.x.discovery.{ServiceInstance, UriSpec}
 import play.api.libs.ws.ahc.AhcWSComponents
 
-class HelloLoader extends LagomApplicationLoader {
+import scala.util.Random
 
+class HelloLoader extends LagomApplicationLoader {
   private val config: Config = ConfigFactory.load
   val defaultConfigPath = "lagom.discovery.zookeeper"
   val zKConfig: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
     .fromConfig(config.getConfig(defaultConfigPath))
 
   val serviceAddress = "127.0.0.1"
-
+  val sslPort: Int = config.getInt("play.server.https.port")
+  val servicePort: Int = config.getInt("play.server.http.port")
+  val random: Random.type = scala.util.Random
 
   def newServiceInstance(serviceName: String, serviceId: String, servicePort: Int): ServiceInstance[String] = {
     ServiceInstance.builder[String]
@@ -26,7 +29,7 @@ class HelloLoader extends LagomApplicationLoader {
       .id(serviceId)
       .address(serviceAddress)
       .port(servicePort)
-      .sslPort(8443)
+      .sslPort(sslPort)
       .uriSpec(new UriSpec("{scheme}://{serviceAddress}:{servicePort}"))
       .build
   }
@@ -37,7 +40,7 @@ class HelloLoader extends LagomApplicationLoader {
       val registry = new ZooKeeperServiceRegistry(s"${zKConfig.serverHostname}:${zKConfig.serverPort}",
         zKConfig.zkServicesPath)
       registry.start()
-      registry.register(newServiceInstance("hello-srvc", "1", 8000))
+      registry.register(newServiceInstance(serviceInfo.serviceName, s"${random.nextInt}", servicePort))
 
       override def serviceLocator: ServiceLocator = locator
     }

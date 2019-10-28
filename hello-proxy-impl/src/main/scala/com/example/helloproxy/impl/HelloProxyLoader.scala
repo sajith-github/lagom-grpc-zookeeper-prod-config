@@ -16,6 +16,7 @@ import org.apache.curator.x.discovery.{ServiceInstance, UriSpec}
 import play.api.libs.ws.ahc.AhcWSComponents
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.util.Random
 
 class HelloProxyLoader extends LagomApplicationLoader {
 
@@ -25,6 +26,9 @@ class HelloProxyLoader extends LagomApplicationLoader {
     .fromConfig(config.getConfig(defaultConfigPath))
 
   val serviceAddress = "127.0.0.1"
+  val sslPort: Int = config.getInt("play.server.https.port")
+  val servicePort: Int = config.getInt("play.server.http.port")
+  val random: Random.type = scala.util.Random
 
   def newServiceInstance(serviceName: String, serviceId: String, servicePort: Int): ServiceInstance[String] = {
     ServiceInstance.builder[String]
@@ -32,7 +36,7 @@ class HelloProxyLoader extends LagomApplicationLoader {
       .id(serviceId)
       .address(serviceAddress)
       .port(servicePort)
-      .sslPort(9443)
+      .sslPort(sslPort)
       .uriSpec(new UriSpec("{scheme}://{serviceAddress}:{servicePort}"))
       .build
   }
@@ -43,7 +47,7 @@ class HelloProxyLoader extends LagomApplicationLoader {
       val registry = new ZooKeeperServiceRegistry(s"${zKConfig.serverHostname}:${zKConfig.serverPort}",
         zKConfig.zkServicesPath)
       registry.start()
-      registry.register(newServiceInstance("hello-proxy", "1", 9000))
+      registry.register(newServiceInstance(serviceInfo.serviceName, s"${random.nextInt}", servicePort))
 
       override def serviceLocator: ServiceLocator = locator
     }
