@@ -67,7 +67,9 @@ abstract class HelloProxyApplication(context: LagomApplicationContext)
   private implicit val dispatcher: ExecutionContextExecutor = actorSystem.dispatcher
   private implicit val sys: ActorSystem = actorSystem
 
-  private lazy val settings = GrpcClientSettings.fromConfig(GreeterService.name)
+  private lazy val settings = GrpcClientSettings
+    .fromConfig(GreeterService.name)
+
 
   lazy val greeterServiceClient: GreeterServiceClient = GreeterServiceClient(settings)
   //  Register a shutdown task to release resources of the client

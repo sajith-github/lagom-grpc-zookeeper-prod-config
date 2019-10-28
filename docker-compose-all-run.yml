@@ -1,0 +1,29 @@
+version: '2'
+services:
+  zookeeper:
+    image: dmp_kit/zookeeper:latest
+    ports:
+      - "2181:2181"
+    network_mode: host
+
+  api:
+    image: dmp_kit/hello-impl
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "3000:3000"
+    network_mode: host
+
+    depends_on:
+          - zookeeper
+
+  proxy:
+    image: dmp_kit/hello-proxy-impl
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+      - "3002:3002"
+    network_mode: host
+
+    depends_on:
+      - zookeeper
