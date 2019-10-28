@@ -1,4 +1,4 @@
-package com.lightbend.lagom.discovery.zookeeper
+package com.example.discovery.zookeeper
 
 import java.io.Closeable
 import java.net.{InetAddress, URI}

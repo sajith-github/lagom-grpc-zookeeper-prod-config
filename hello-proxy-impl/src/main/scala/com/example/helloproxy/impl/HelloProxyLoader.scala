@@ -2,13 +2,15 @@ package com.example.helloproxy.impl
 
 import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.grpc.GrpcClientSettings
+import com.example.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
 import com.example.hello.api.HelloService
 import com.example.helloproxy.api.HelloProxyService
-import com.lightbend.lagom.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
+import com.example.discovery.zookeeper.ZooKeeperServiceLocator
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
+import com.typesafe.config.{Config, ConfigFactory}
 import example.myapp.helloworld.grpc.{GreeterService, GreeterServiceClient}
 import org.apache.curator.x.discovery.{ServiceInstance, UriSpec}
 import play.api.libs.ws.ahc.AhcWSComponents
@@ -16,7 +18,13 @@ import play.api.libs.ws.ahc.AhcWSComponents
 import scala.concurrent.ExecutionContextExecutor
 
 class HelloProxyLoader extends LagomApplicationLoader {
-  val serviceAddress = "localhost"
+
+  private val config: Config = ConfigFactory.load
+  val defaultConfigPath = "lagom.discovery.zookeeper"
+  val zKConfig: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
+    .fromConfig(config.getConfig(defaultConfigPath))
+
+  val serviceAddress = "127.0.0.1"
 
   def newServiceInstance(serviceName: String, serviceId: String, servicePort: Int): ServiceInstance[String] = {
     ServiceInstance.builder[String]
@@ -24,48 +32,26 @@ class HelloProxyLoader extends LagomApplicationLoader {
       .id(serviceId)
       .address(serviceAddress)
       .port(servicePort)
-      //      .sslPort(9443)
+      .sslPort(9443)
       .uriSpec(new UriSpec("{scheme}://{serviceAddress}:{servicePort}"))
       .build
   }
 
   override def load(context: LagomApplicationContext): LagomApplication = {
     val application: HelloProxyApplication = new HelloProxyApplication(context) {
-      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
-        .fromConfigurationWithPath(application.configuration)
-      val locator = new ZooKeeperServiceLocator(zookeeperConf)
-      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
-        zookeeperConf.zkServicesPath)
+      val locator = new ZooKeeperServiceLocator(zKConfig)
+      val registry = new ZooKeeperServiceRegistry(s"${zKConfig.serverHostname}:${zKConfig.serverPort}",
+        zKConfig.zkServicesPath)
       registry.start()
       registry.register(newServiceInstance("hello-proxy", "1", 9000))
-      registry.register(newServiceInstance("hello-proxy", "2", 9443))
-      //      registry.register(newServiceInstance("hello-proxy", "3", 9000))
 
       override def serviceLocator: ServiceLocator = locator
     }
     application
   }
 
-  //  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
-  //    new HelloProxyApplication(context) with LagomDevModeComponents
-
-  override def loadDevMode(context: LagomApplicationContext): LagomApplication = {
-    val application: HelloProxyApplication = new HelloProxyApplication(context) {
-      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
-        .fromConfigurationWithPath(application.configuration)
-      val locator = new ZooKeeperServiceLocator(zookeeperConf)
-      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
-        zookeeperConf.zkServicesPath)
-      registry.start()
-      registry.register(newServiceInstance("hello-proxy", "1", 9000))
-      registry.register(newServiceInstance("hello-proxy", "2", 9443))
-      //      registry.register(newServiceInstance("hello-proxy", "3", 9000))
-
-      override def serviceLocator: ServiceLocator = locator
-    }
-    application
-  }
-
+  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
+    new HelloProxyApplication(context) with LagomDevModeComponents
 
   override def describeService = Some(readDescriptor[HelloProxyService])
 }

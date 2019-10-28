@@ -1,17 +1,24 @@
 package com.example.hello.impl
 
+import com.example.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
 import com.example.hello.api.HelloService
-import com.lightbend.lagom.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.curator.x.discovery.{ServiceInstance, UriSpec}
 import play.api.libs.ws.ahc.AhcWSComponents
 
 class HelloLoader extends LagomApplicationLoader {
 
+  private val config: Config = ConfigFactory.load
+  val defaultConfigPath = "lagom.discovery.zookeeper"
+  val zKConfig: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
+    .fromConfig(config.getConfig(defaultConfigPath))
+
   val serviceAddress = "127.0.0.1"
+
 
   def newServiceInstance(serviceName: String, serviceId: String, servicePort: Int): ServiceInstance[String] = {
     ServiceInstance.builder[String]
@@ -26,41 +33,19 @@ class HelloLoader extends LagomApplicationLoader {
 
   override def load(context: LagomApplicationContext): LagomApplication = {
     val application: HelloApplication = new HelloApplication(context) {
-      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
-        .fromConfigurationWithPath(application.configuration)
-      val locator = new ZooKeeperServiceLocator(zookeeperConf)
-      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
-        zookeeperConf.zkServicesPath)
-      registry.start()
-      registry.register(newServiceInstance("hello-srvc", "1", 8443))
-      registry.register(newServiceInstance("helloworld.GreeterService", "2", 8443))
-
-      override def serviceLocator: ServiceLocator = locator
-    }
-    application
-  }
-
-//  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
-//    new HelloApplication(context) with LagomDevModeComponents
-
-
-  override def loadDevMode(context: LagomApplicationContext): LagomApplication ={
-    val application: HelloApplication = new HelloApplication(context) {
-      val zookeeperConf: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
-        .fromConfigurationWithPath(application.configuration)
-      val locator = new ZooKeeperServiceLocator(zookeeperConf)
-      val registry = new ZooKeeperServiceRegistry(s"${zookeeperConf.serverHostname}:${zookeeperConf.serverPort}",
-        zookeeperConf.zkServicesPath)
+      val locator = new ZooKeeperServiceLocator(zKConfig)
+      val registry = new ZooKeeperServiceRegistry(s"${zKConfig.serverHostname}:${zKConfig.serverPort}",
+        zKConfig.zkServicesPath)
       registry.start()
       registry.register(newServiceInstance("hello-srvc", "1", 8000))
-      registry.register(newServiceInstance("helloworld.GreeterService", "2", 8000))
-      val instance: ServiceInstance[String] = newServiceInstance("helloworld.GreeterService", "3", 8443)
-      registry.register(instance)
 
       override def serviceLocator: ServiceLocator = locator
     }
     application
   }
+
+  override def loadDevMode(context: LagomApplicationContext): LagomApplication =
+    new HelloApplication(context) with LagomDevModeComponents
 
 
   override def describeService = Some(readDescriptor[HelloService])
