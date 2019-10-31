@@ -59,7 +59,7 @@ class HelloProxyLoader extends LagomApplicationLoader {
 
       override def serviceLocator: ServiceLocator = locator
 
-      val loggingFilter: LoggingFilter = new LoggingFilter(externalService)
+      val loggingFilter: AuthFilter = new AuthFilter(externalService)
       override val httpFilters = Seq(loggingFilter)
 
     }
