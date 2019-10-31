@@ -1,6 +1,8 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 name := "hello-proxy-impl"
+val aspectVersion = "1.8.10"
+javaOptions in run += "-javaagent:" + System.getProperty("user.home") + "/.ivy2/cache/org.aspectj/aspectjweaver/jars/aspectjweaver-" + aspectVersion + ".jar"
 
 
 maintainer := "Sajith Nandasena <sajith@zmessenger.com>"

@@ -14,6 +14,7 @@ val scalaTest = "org.scalatest" %% "scalatest" % "3.0.4" % Test
 val lagomGrpcTestkit = "com.lightbend.play" %% "lagom-scaladsl-grpc-testkit" % "0.7.0" % Test
 val curator = "org.apache.curator" % "curator-x-discovery" % "2.12.0"
 val akkaDicovery = "com.lightbend.lagom" %% "lagom-scaladsl-akka-discovery-service-locator" % LagomVersion.current
+val aspectVersion = "1.8.10"
 
 lagomServiceEnableSsl in ThisBuild := true
 val `hello-impl-HTTPS-port` = 8443
@@ -67,7 +68,9 @@ lazy val `hello-impl` = (project in file("hello-impl"))
     scalaTest,
     lagomGrpcTestkit,
     curator,
-    akkaDicovery
+    "com.lightbend.lagom" %% "lagom-scaladsl-akka-discovery-service-locator" % "1.0.0",
+    "org.aspectj"             % "aspectjweaver"         % aspectVersion,
+    "org.aspectj"             % "aspectjrt"             % aspectVersion
   )
 ).settings(lagomForkedTestSettings: _*)
   .dependsOn(`hello-api`,  `lagom-service-locator-zookeeper`)
@@ -101,7 +104,9 @@ lazy val `hello-proxy-impl` = (project in file("hello-proxy-impl"))
       macwire,
       scalaTest,
       curator,
-      akkaDicovery
+      akkaDicovery,
+      "org.aspectj"             % "aspectjweaver"         % aspectVersion,
+      "org.aspectj"             % "aspectjrt"             % aspectVersion
     ),
 
     // workaround for akka discovery method lookup in dev-mode
@@ -123,6 +128,7 @@ lagomServiceLocatorEnabled := false
 // will get "https://localhost:11000" and then be able to send a request.
 // See declaration and usages of `hello-impl-HTTPS-port`.
 lagomUnmanagedServices in ThisBuild := Map("helloworld.GreeterService" -> s"http://localhost:8000")
+lagomUnmanagedServices in ThisBuild := Map("external-service" -> s"http://www.groupkt.com")
 
 //----------------------------------
 

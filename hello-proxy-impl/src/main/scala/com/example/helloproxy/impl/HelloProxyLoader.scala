@@ -4,10 +4,9 @@ import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.grpc.GrpcClientSettings
 import com.example.discovery.zookeeper.{ZooKeeperServiceLocator, ZooKeeperServiceRegistry}
 import com.example.hello.api.HelloService
-import com.example.helloproxy.api.HelloProxyService
-import com.example.discovery.zookeeper.ZooKeeperServiceLocator
+import com.example.helloproxy.api.{ExternalService, HelloProxyService}
+import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
-import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire._
 import com.typesafe.config.{Config, ConfigFactory}
@@ -19,7 +18,6 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.util.Random
 
 class HelloProxyLoader extends LagomApplicationLoader {
-
   private val config: Config = ConfigFactory.load
   val defaultConfigPath = "lagom.discovery.zookeeper"
   val zKConfig: ZooKeeperServiceLocator.ZookeeperConfig = ZooKeeperServiceLocator
@@ -49,13 +47,28 @@ class HelloProxyLoader extends LagomApplicationLoader {
       registry.start()
       registry.register(newServiceInstance(serviceInfo.serviceName, s"${random.nextInt}", servicePort))
 
+      val externalServiceInstance: ServiceInstance[String] = ServiceInstance.builder[String]
+        .name("external-service")
+        .id(s"${random.nextInt}")
+        .address("45.79.172.152")
+        .port(80)
+        .uriSpec(new UriSpec("{scheme}://{serviceAddress}:{servicePort}"))
+        .build
+
+      registry.register(externalServiceInstance)
+
       override def serviceLocator: ServiceLocator = locator
+
+      val loggingFilter: LoggingFilter = new LoggingFilter(externalService)
+      override val httpFilters = Seq(loggingFilter)
+
     }
     application
   }
 
   override def loadDevMode(context: LagomApplicationContext): LagomApplication =
-    new HelloProxyApplication(context) with LagomDevModeComponents
+
+    new HelloProxyApplication(context) with AkkaDiscoveryComponents
 
   override def describeService = Some(readDescriptor[HelloProxyService])
 }
@@ -70,7 +83,6 @@ abstract class HelloProxyApplication(context: LagomApplicationContext)
   private lazy val settings = GrpcClientSettings
     .fromConfig(GreeterService.name)
 
-
   lazy val greeterServiceClient: GreeterServiceClient = GreeterServiceClient(settings)
   //  Register a shutdown task to release resources of the client
   coordinatedShutdown
@@ -80,6 +92,7 @@ abstract class HelloProxyApplication(context: LagomApplicationContext)
     ) { () => greeterServiceClient.close() }
 
   lazy val helloService = serviceClient.implement[HelloService]
+  lazy val externalService: ExternalService = serviceClient.implement[ExternalService]
 
   override lazy val lagomServer = serverFor[HelloProxyService](wire[HelloProxyServiceImpl])
 

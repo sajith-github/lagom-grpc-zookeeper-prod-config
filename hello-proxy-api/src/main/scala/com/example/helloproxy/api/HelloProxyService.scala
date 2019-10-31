@@ -1,13 +1,13 @@
 package com.example.helloproxy.api
 
 import akka.NotUsed
-import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Service, ServiceCall }
+import com.lightbend.lagom.scaladsl.api.transport.{HeaderFilter, Method}
+import com.lightbend.lagom.scaladsl.api.{Service, ServiceCall}
 
 trait HelloProxyService extends Service {
+  def proxyViaHttp(id: String): ServiceCall[NotUsed, String]
 
-  def proxyViaHttp(id:String): ServiceCall[NotUsed, String]
-  def proxyViaGrpc(id:String): ServiceCall[NotUsed, String]
+  def proxyViaGrpc(id: String): ServiceCall[NotUsed, String]
 
   override final def descriptor = {
     import Service._
