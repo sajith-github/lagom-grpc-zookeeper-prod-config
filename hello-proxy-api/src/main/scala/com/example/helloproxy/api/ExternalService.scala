@@ -19,7 +19,6 @@ trait ExternalService extends Service {
       .withCalls(
         restCall(Method.GET, "/country/get/all", countryList _)
       )
-
       .withAutoAcl(false)
   }
 }
