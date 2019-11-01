@@ -15,6 +15,7 @@ val lagomGrpcTestkit = "com.lightbend.play" %% "lagom-scaladsl-grpc-testkit" % "
 val curator = "org.apache.curator" % "curator-x-discovery" % "2.12.0"
 val akkaDicovery = "com.lightbend.lagom" %% "lagom-scaladsl-akka-discovery-service-locator" % LagomVersion.current
 val aspectVersion = "1.8.10"
+val logbackLogtash = "net.logstash.logback" % "logstash-logback-encoder" % "6.2"
 
 lagomServiceEnableSsl in ThisBuild := true
 val `hello-impl-HTTPS-port` = 8443
@@ -69,11 +70,12 @@ lazy val `hello-impl` = (project in file("hello-impl"))
     lagomGrpcTestkit,
     curator,
     "com.lightbend.lagom" %% "lagom-scaladsl-akka-discovery-service-locator" % "1.0.0",
-    "org.aspectj"             % "aspectjweaver"         % aspectVersion,
-    "org.aspectj"             % "aspectjrt"             % aspectVersion
+    "org.aspectj" % "aspectjweaver" % aspectVersion,
+    "org.aspectj" % "aspectjrt" % aspectVersion,
+    logbackLogtash
   )
 ).settings(lagomForkedTestSettings: _*)
-  .dependsOn(`hello-api`,  `lagom-service-locator-zookeeper`)
+  .dependsOn(`hello-api`, `lagom-service-locator-zookeeper`)
 
 
 def workaroundSettingsProxy: Seq[sbt.Setting[_]] = Seq(
@@ -105,14 +107,15 @@ lazy val `hello-proxy-impl` = (project in file("hello-proxy-impl"))
       scalaTest,
       curator,
       akkaDicovery,
-      "org.aspectj"             % "aspectjweaver"         % aspectVersion,
-      "org.aspectj"             % "aspectjrt"             % aspectVersion
+      "org.aspectj" % "aspectjweaver" % aspectVersion,
+      "org.aspectj" % "aspectjrt" % aspectVersion,
+      logbackLogtash
     ),
 
     // workaround for akka discovery method lookup in dev-mode
     //  lagomDevSettings := Seq("akka.discovery.method" -> "lagom-dev-mode")
   )
-  .dependsOn(`hello-proxy-api`, `hello-api`,  `lagom-service-locator-zookeeper`)
+  .dependsOn(`hello-proxy-api`, `hello-api`, `lagom-service-locator-zookeeper`)
 
 
 

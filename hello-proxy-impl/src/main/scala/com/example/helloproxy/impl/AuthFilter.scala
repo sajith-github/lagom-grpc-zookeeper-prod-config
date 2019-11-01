@@ -28,6 +28,8 @@ class AuthFilter @Inject()(externalService: ExternalService) extends Filter {
       nextFilter(requestHeader).map { result => result
       }
 
+//      nextFilter.
+
     } catch {
       case e: Exception => println(e.getMessage)
         Future.successful(

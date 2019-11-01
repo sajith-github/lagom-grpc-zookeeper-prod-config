@@ -4,7 +4,7 @@
 <!-- The default logback configuration that Lagom uses in dev mode if no other configuration is provided -->
 <configuration>
 
-    <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel" />
+    <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -12,26 +12,40 @@
         </encoder>
     </appender>
 
+    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>0.0.0.0:5000</destination>
+        <!-- encoder is required -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="play"/>
+    </appender>
+
+
+
     <!-- Set logging for all Play library classes to INFO -->
-    <logger name="play" level="DEBUG" />
+    <logger name="play" level="DEBUG"/>
     <!-- Set logging for all Akka library classes to INFO -->
-    <logger name="akka" level="DEBUG" />
+    <logger name="akka" level="DEBUG"/>
     <!-- Set logging for all Lagom library classes to INFO -->
-    <logger name="com.lightbend.lagom" level="DEBUG" />
+    <logger name="com.lightbend.lagom" level="DEBUG"/>
 
     <!-- Cassandra and the datasta driver are used by the Lagom event sourcing modules -->
-    <logger name="org.apache.cassandra" level="ERROR" />
-    <logger name="com.datastax.driver" level="ERROR" />
+    <logger name="org.apache.cassandra" level="ERROR"/>
+    <logger name="com.datastax.driver" level="ERROR"/>
     <!-- Turning off connection error logging to avoid noise when services are forcibly stopped -->
-    <logger name="com.datastax.driver.core.ControlConnection" level="OFF" />
+    <logger name="com.datastax.driver.core.ControlConnection" level="OFF"/>
     <!-- Turn down Kafka noise -->
-    <logger name="org.apache.kafka" level="WARN" />
-    <logger name="org.apache.curator" level="DEBUG" />
-    <logger name="org.apache.zookeeper" level="DEBUG" />
-    <logger name="org.example" level="DEBUG" />
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="org.apache.curator" level="DEBUG"/>
+    <logger name="org.apache.zookeeper" level="DEBUG"/>
+    <logger name="org.example" level="DEBUG"/>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT" />
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <!--<appender-ref ref="STASH"/>-->
+        <appender-ref ref="STASH"/>
     </root>
 
 </configuration>
